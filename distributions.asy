@@ -1,12 +1,12 @@
 /*
-
+// distributions.asy
 *** Version 0.2a  ... ***
 
 - Add several new distributions (include PDF and CDF)
 
 // Supported on the whole real line
 
-
+Will be updated later ...
 
 *** Version 0.2  8/26/2020 ***
 
@@ -132,6 +132,7 @@ This package has the following distributions (in gsl.cc): (include PDF and CDF)
 private import gsl;
 
 typedef real REAL(real);
+typedef pair PAIR(real);
 
 // https://en.wikipedia.org/wiki/List_of_probability_distributions
 
@@ -220,8 +221,6 @@ REAL IrwinHalldistCDF(int n=1){
   };
 };
 
-typedef pair PAIR(real);
-
 PAIR IrwinHalldistributionCDF(int n=1){
   return new pair(real x){
     return (x <= 0) ? (x,0) : (x >= n) ? (x,1) : (x,IrwinHalldistCDF(n)(x));
@@ -272,32 +271,192 @@ REAL KumaraswamydistributionCDF(real a=0.5, real b=0.5){
 
 /* PERT distribution */
 
+REAL PERTdistributionPDF(real a=0, real b=10, real c=100){
+  return new real(real x){
+    real alpha=1+4*(b-a)/(c-a);
+	real beta=1+4*(c-b)/(c-a);
+    real A=(x-a)^(alpha-1)*(c-x)^(beta-1);
+	real B=beta(alpha,beta)*(c-a)^(alpha+beta-1);
+    return A/B;
+  };
+};
+
+REAL PERTdistributionCDF(real a=0, real b=10, real c=100){
+  return new real(real x){
+    real alpha=1+4*(b-a)/(c-a);
+	real beta=1+4*(c-b)/(c-a);  
+	real z=(x-a)/(c-a);
+    return beta(alpha,beta,z)/beta(alpha,beta);
+  };
+};
 
 /* Raised cosine distribution */
 
+REAL RaisedcosinedistributionPDF(real mu=0, real s=0.5){
+  return new real(real x){
+    real A=pi*(x-mu)/s;
+    return (1+cos(A))/(2*s);
+  };
+};
+
+REAL RaisedcosinedistributionCDF(real mu=0, real s=0.5){
+  return new real(real x){
+    real A=(x-mu)/s;
+    return 0.5*(1+A+sin(A*pi)/pi);
+  };
+};
 
 /* Reciprocal distribution */
 
+REAL ReciprocaldistributionPDF(real a=0.5, real b=1){
+  return new real(real x){
+    return 1/(x*log(b/a));
+  };
+};
+
+REAL ReciprocaldistributionCDF(real a=0.5, real b=1){
+  return new real(real x){
+    return log(x/a)/log(b/a);
+  };
+};
 
 /* Triangular distribution */
+// https://en.wikipedia.org/wiki/Triangular_distribution
 
+REAL TriangulardistPDF(real a=0.25, real c=0.5, real b=1){
+  return new real(real x){
+    if (x < a) { return 0;}
+	  else if ( x >= a && x < c){ return 2*(x-a)/((b-a)*(c-a));}
+	    else if (x == c) { return 2/(b-a);}
+		  else if ( x > c && x <= b) { return 2*(b-x)/((b-a)*(b-c));}
+            else { return 0;}
+  };
+};
+
+REAL TriangulardistCDF(real a=0.25, real c=0.5, real b=1){
+  return new real(real x){
+    if ( x <= a) { return 0;}
+	  else if ( x > a && x <= c) { return (x-a)^2/((b-a)*(c-a));}
+	    else if ( x > c && x < b) { return 1-(b-x)^2/((b-a)*(b-c));}
+		  else { return 1;}
+  };
+};
+
+PAIR TriangulardistributionPDF(real a=0.25, real c=0.5, real b=1){
+  return new pair(real x){
+    if (x < a || x > b) { return (x,0);}
+	  else { return (x,TriangulardistPDF(a,c,b)(x));}
+  };
+};
+
+PAIR TriangulardistributionCDF(real a=0.25, real c=0.5, real b=1){
+  return new pair(real x){
+    if ( x <= a) { return (x,0);}
+	  else if ( x >= b) { return (x,1);}
+	    else { return (x,TriangulardistCDF(a,c,b)(x));}
+  };
+};
 
 /* Trapezoidal distribution */
+// https://en.wikipedia.org/wiki/Trapezoidal_distribution
 
+REAL TrapezoidaldistPDF(real a=0, real b=0.25, real c=0.5, real d=1){
+  return new real(real x){
+    real H=2/(d+c-a-b);
+    if (x >= a && x < b) { return H*(x-a)/(b-a);}
+	  else if ( x >= b && x < c){ return H;}
+        else { return H*(d-x)/(d-c);}
+  };
+};
+
+REAL TrapezoidaldistCDF(real a=0, real b=0.25, real c=0.5, real d=1){
+  return new real(real x){
+    real H=1/(d+c-a-b);
+    if (x >= a && x < b) { return H*(x-a)^2/(b-a);}
+	  else if ( x >= b && x < c){ return H*(2*x-a-b);}
+        else { return 1-H*(d-x)^2/(d-c);}
+  };
+};
+
+PAIR TrapezoidaldistributionPDF(real a=0, real b=0.25, real c=0.5, real d=1){
+  return new pair(real x){
+    return (x,TrapezoidaldistPDF(a,b,c,d)(x));
+  };
+};
+
+PAIR TrapezoidaldistributionCDF(real a=0, real b=0.25, real c=0.5, real d=1){
+  return new pair(real x){
+	return (x,TrapezoidaldistCDF(a,b,c,d)(x));
+  };
+};
 
 /* Truncated normal distribution */
+// https://en.wikipedia.org/wiki/Truncated_normal_distribution
 
+REAL TruncatednormaldistributionPDF(real mu=0, real sigma=1, real a=0, real b=1){
+  return new real(real x){
+    real A=(x-mu)/sigma;
+	real B=(b-mu)/sigma;
+	real C=(a-mu)/sigma;
+    return (1/sigma)*pdf_gaussian(A,mu=0,1)/(cdf_gaussian_P(B,mu=0,1)-cdf_gaussian_P(C,mu=0,1));
+  };
+};
+
+REAL TruncatednormaldistributionCDF(real mu=0, real sigma=1, real a=0, real b=1){
+  return new real(real x){
+    real A=(x-mu)/sigma;
+	real B=(b-mu)/sigma;
+	real C=(a-mu)/sigma;
+    real Z=cdf_gaussian_P(B,mu=0,1)-cdf_gaussian_P(C,mu=0,1);
+    return (cdf_gaussian_P(A,mu=0,1)-cdf_gaussian_P(C,mu=0,1))/Z;
+  };
+};
 
 /* U-quadratic distribution */
 
+REAL UquadraticdistributionPDF(real alpha=0.5, real beta=1){
+  return new real(real x){
+    return alpha*(x-beta)^2;
+  };
+};
 
+REAL UquadraticdistributionCDF(real alpha=0.5, real beta=1, real a=0.5){
+  return new real(real x){
+    return (alpha/3)*((x-beta)^3+(beta-a)^3);
+  };
+};
 
 /* Wigner semicircle distribution */
 
+REAL WignersemicircledistributionPDF(real R=0.5){
+  return new real(real x){
+    return 2*sqrt(R^2-x^2)/(pi*R^2);
+  };
+};
+
+REAL WignersemicircledistributionCDF(real R=0.5){
+  return new real(real x){
+    return 0.5+x*sqrt(R^2-x^2)/(pi*R^2)+asin(x/R)/pi;
+  };
+};
 
 /* Continuous Bernoulli distribution */
 
+REAL ContinuousBernoullidistributionPDF(real lambda=0.5){
+  return new real(real x){
+    real C(real a){
+	  return (a != 1/2) ? 2*atanh(1-2*a)/(1-2*a) : 2;
+	}
+    return C(lambda)*(lambda^x)*(1-lambda)^(1-x);
+  };
+};
 
+REAL ContinuousBernoullidistributionCDF(real lambda=0.5){
+  return new real(real x){
+    real A= ((lambda^x)*(1-lambda)^(1-x)+lambda-1)/(2*lambda-1);
+    return (lambda != 0.5) ? A : x;
+  };
+};
 
 // Supported on intervals of length 2π – directional distributions
 
